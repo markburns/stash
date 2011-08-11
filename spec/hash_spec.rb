@@ -27,11 +27,4 @@ describe Stash::Hash do
     @hash.to_hash.should == {'foo'=>'a', 'bar'=>'b'}
   end
 
-  it "instantiates from a Ruby hash" do
-    ruby_hash = {:foo => 'bar', :baz => 'qux'}
-    @hash = Stash::Hash.new :test, ruby_hash
-
-    @hash[:foo].should == 'bar'
-    @hash[:baz].should == 'qux'
-  end
 end

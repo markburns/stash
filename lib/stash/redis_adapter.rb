@@ -42,19 +42,33 @@ class Stash
       end
     end
 
-    # Retrieve the type for a given key
-    def type(key)
-      connection { |redis| redis.type key.to_s }
-    end
+    METHOD_MAPPINGS = {
+      :type => :type,
+      :get => :get,
+      :delete => :del,
+      :hash_length => :hlen,
+      :hash_delete => :hdel,
+      :hash_set => :hset,
+      :hash_get => :hget,
+      :list_length => :llen,
+      :list_range => :lrange,
+      :hash_value => :hgetall,
+      :hash_delete => :hdel,
+      :hash_length => :hlen
+    }
 
-    # Retrieve a key as a string
-    def get(key)
-      connection { |redis| redis.get key.to_s }
-    end
-
-    # Delete a key
-    def delete(key)
-      connection { |redis| redis.del key.to_s }
+    def method_missing method, *args
+      mapped_method = METHOD_MAPPINGS[method]
+      puts "#{method}, mapped to => #{mapped_method}, #{args}"
+      if mapped_method
+        return  connection do |redis|
+          puts redis.to_s
+          debugger
+          redis.send mapped_method, *args
+        end
+      else
+        super method, args
+      end
     end
 
     # Push an element onto a list
@@ -88,54 +102,18 @@ class Stash
       connection do |redis|
         timeout ||= 0
         res = case side
-        when :left
-          redis.blpop name, timeout
-        when :right
-          redis.brpop name, timeout
-        else raise ArgumentError, "left or right plztks"
-        end
+              when :left
+                redis.blpop name, timeout
+              when :right
+                redis.brpop name, timeout
+              else raise ArgumentError, "left or right plztks"
+              end
 
         return res[1] if res
         raise Stash::TimeoutError, "request timed out"
       end
     end
 
-    # Retrieve the length of a list
-    def list_length(name)
-      connection { |redis| redis.llen name.to_s }
-    end
-
-    # Retrieve the given range from a list
-    def list_range(name, from, to)
-      connection { |redis| redis.lrange name.to_s, from, to }
-    end
-
-    # Retrieve a value from a hash
-    def hash_get(name, key)
-      res = connection { |redis| redis.hget name.to_s, key.to_s }
-      return if res == ""
-      res
-    end
-
-    # Store a value in a hash
-    def hash_set(name, key, value)
-      connection { |redis| redis.hset name.to_s, key.to_s, value.to_s }
-    end
-
-    # Retrieve the contents of a hash as a Ruby hash
-    def hash_value(name)
-      connection { |redis| redis.hgetall name.to_s }
-    end
-
-    # Delete an entry from a hash
-    def hash_delete(name, key)
-      connection { |redis| redis.hdel name.to_s, key.to_s }
-    end
-
-    # Return the length of a hash
-    def hash_length(name)
-      connection { |redis| redis.hlen name.to_s }
-    end
 
     #######
     private
