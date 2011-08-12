@@ -91,55 +91,85 @@ class Stash
       :info => :info,
       :keys => :keys,
       :last_save => :lastsave,
-      :lindex => :lindex,
-      :linsert => :linsert,
-      :llen => :llen,
-      :lpop => :lpop,
-      :lpush => :lpush,
-      :lpushx => :lpushx,
-      :lrange => :lrange,
-      :lrem => :lrem,
-      :lset => :lset,
-      :ltrim => :ltrim,
-      :mget => :mget,
+      :list_index => :lindex,
+      :list_insert => :linsert,
+      :list_len => :llen,
+      :list_pop => :lpop,
+      :list_push => :lpush,
+      :list_push_if_exists => :lpushx,
+      :list_range => :lrange,
+      :list_remove => :lrem,
+      :list_set => :lset,
+      :list_trim => :ltrim,
+      :multi_get => :mget,
       :monitor => :monitor,
-      :move => :move,
-      :mset => :mset,
-      :msetnx => :msetnx,
-      :multi => :multi,
+      :move_to_db => :move,
+      :multi_set => :mset,
+      :multi_set_if_exist => :msetnx,
+      :start_transaction => :multi,
       :object => :object,
       :persist => :persist,
       :ping => :ping,
-      :psubscribe => :psubscribe,
+      :subscribe_if_match => :psubscribe,
       :publish => :publish,
-      :punsubscribe => :punsubscribe,
+      :unsubscribe_if_match => :punsubscribe,
       :quit => :quit,
-      :randomkey => :randomkey,
+      :random_key => :randomkey,
       :rename => :rename,
-      :renamenx => :renamenx,
-      :rpop => :rpop,
+      :rename_unless_new_exists => :renamenx,
       :rpoplpush => :rpoplpush,
-      :rpush => :rpush,
       :rpushx => :rpushx,
-      :sadd => :sadd,
+
+      :add_to_set => :sadd,
+      :set_add => :sadd,
+
       :save => :save,
-      :scard => :scard,
-      :sdiff => :sdiff,
-      :sdiffstore => :sdiffstore,
+
+      :count_set => :scard,
+      :set_count => :scard,
+
+      :set_diff => :sdiff,
+      :diff_set => :sdiff,
+      :set_subtract => :sdiff,
+      :subtract_set => :sdiff,
+
+      :set_diff_store => :sdiffstore,
+      :subtract_set_and_store => :sdiffstore,
+
       :select => :select,
       :set => :set,
-      :setbit => :setbit,
-      :setex => :setex,
-      :setnx => :setnx,
-      :setrange => :setrange,
+      :set_bit => :setbit,
+
+      :set_value_and_expiration => :setex,
+      :set_value_and_expiry => :setex,
+
+      :set_value_if_exists => :setnx,
+      :set_if_exists => :setnx,
+
+      :set_range => :setrange,
       :shutdown => :shutdown,
-      :sinter => :sinter,
-      :sinterstore => :sinterstore,
-      :sismember => :sismember,
-      :slaveof => :slaveof,
-      :slowlog => :slowlog,
-      :smembers => :smembers,
-      :smove => :smove,
+
+      :set_intersect => :sinter,
+      :intersect_set => :sinter,
+      :intersect_sets => :sinter,
+
+      :set_intersect_and_store => :sinterstore,
+      :intersect_sets_and_store => :sinterstore,
+
+      :is_member => :sismember,
+      :is_a_member => :sismember,
+      :is_member_of => :sismember,
+      :is_a_member_of => :sismember,
+      :is_member? => :sismember,
+      :is_a_member? => :sismember,
+      :is_member_of? => :sismember,
+      :is_a_member_of? => :sismember,
+
+
+      :slave_of => :slaveof,
+      :slow_log => :slowlog,
+      :members => :smembers,
+      :set_move => :smove,
       :sort => :sort,
       :spop => :spop,
       :srandmember => :srandmember,
@@ -293,14 +323,8 @@ ZSCORE key member Get the score associated with the given member in a sorted set
 ZUNIONSTORE destination numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX] Add multiple sorted sets and store the resulting sorted set in a new key
 =end
     def method_missing method, *args
-      mapped_method = METHOD_MAPPINGS[method]
-      puts "#{method}, mapped to => #{mapped_method}, #{args}"
-      if mapped_method
-        return  connection do |redis|
-          puts redis.to_s
-          debugger
-          redis.send mapped_method, *args
-        end
+      if mapped_method = METHOD_MAPPINGS[method]
+        return  connection { |redis| redis.send mapped_method, *args }
       else
         super method, args
       end
